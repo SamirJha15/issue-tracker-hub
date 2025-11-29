@@ -24,9 +24,9 @@ const statusBorderColors = {
 export const IssueCard = ({ issue, onClick }: IssueCardProps) => {
   return (
     <Card
-      className={`p-4 mb-3 cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 ${
+      className={`p-4 mb-3 hover:shadow-md transition-all duration-200 border-l-4 ${
         statusBorderColors[issue.status]
-      } bg-card`}
+      } bg-card select-none`}
       onClick={onClick}
     >
       <div className="space-y-3">

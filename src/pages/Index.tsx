@@ -54,12 +54,26 @@ const Index = () => {
     if (!over) return;
 
     const activeIssue = issues.find((issue) => issue.id === active.id);
+    
+    // Check if dropping over a column or another issue
+    let targetStatus: Status | undefined;
+    
+    // First check if dropping directly on a column
     const overColumn = columns.find((col) => col.id === over.id);
+    if (overColumn) {
+      targetStatus = overColumn.id;
+    } else {
+      // If not, check if dropping on another issue and get that issue's status
+      const overIssue = issues.find((issue) => issue.id === over.id);
+      if (overIssue) {
+        targetStatus = overIssue.status;
+      }
+    }
 
-    if (activeIssue && overColumn && activeIssue.status !== overColumn.id) {
+    if (activeIssue && targetStatus && activeIssue.status !== targetStatus) {
       setIssues((prevIssues) =>
         prevIssues.map((issue) =>
-          issue.id === activeIssue.id ? { ...issue, status: overColumn.id } : issue
+          issue.id === activeIssue.id ? { ...issue, status: targetStatus } : issue
         )
       );
     }
@@ -113,16 +127,17 @@ const Index = () => {
       {/* Kanban Board */}
       <main className="container mx-auto px-6 py-8">
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex gap-6 overflow-x-auto pb-4">
             {columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                issues={getIssuesByStatus(column.id)}
-                onIssueClick={handleIssueClick}
-                colorClass={column.colorClass}
-              />
+              <div key={column.id} className="flex-shrink-0 w-80">
+                <KanbanColumn
+                  id={column.id}
+                  title={column.title}
+                  issues={getIssuesByStatus(column.id)}
+                  onIssueClick={handleIssueClick}
+                  colorClass={column.colorClass}
+                />
+              </div>
             ))}
           </div>
           <DragOverlay>
