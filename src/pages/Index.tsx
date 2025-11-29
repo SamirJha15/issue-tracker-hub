@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
 import { Issue, Status } from "@/types/issue";
 import { mockIssues } from "@/data/mockIssues";
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, User } from "lucide-react";
 
 const Index = () => {
   const [issues, setIssues] = useState<Issue[]>(mockIssues);
@@ -22,6 +22,13 @@ const Index = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+
+  // Extract unique departments from issues
+  const departments = useMemo(() => {
+    const deptSet = new Set(issues.map((issue) => issue.office));
+    return Array.from(deptSet).sort();
+  }, [issues]);
 
   const columns: { id: Status; title: string; colorClass: string }[] = [
     { id: "Backlog", title: "Backlog", colorClass: "bg-column-backlog" },
@@ -36,7 +43,11 @@ const Index = () => {
       issue.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       issue.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       issue.office.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    
+    const matchesDepartment =
+      selectedDepartment === "all" || issue.office === selectedDepartment;
+    
+    return matchesSearch && matchesDepartment;
   });
 
   const getIssuesByStatus = (status: Status) => {
@@ -103,22 +114,23 @@ const Index = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Select>
-                <SelectTrigger className="w-[140px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Priority" />
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="All Departments" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Issue
-              </Button>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span>admin@college.edu</span>
             </div>
           </div>
         </div>
