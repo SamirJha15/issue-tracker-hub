@@ -1,12 +1,144 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
+import { Issue, Status } from "@/types/issue";
+import { mockIssues } from "@/data/mockIssues";
+import { KanbanColumn } from "@/components/KanbanColumn";
+import { IssueCard } from "@/components/IssueCard";
+import { IssueDetailDrawer } from "@/components/IssueDetailDrawer";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Plus, Filter } from "lucide-react";
 
 const Index = () => {
+  const [issues, setIssues] = useState<Issue[]>(mockIssues);
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const columns: { id: Status; title: string; colorClass: string }[] = [
+    { id: "Backlog", title: "Backlog", colorClass: "bg-column-backlog" },
+    { id: "In Progress", title: "In Progress", colorClass: "bg-column-progress" },
+    { id: "Review", title: "Review", colorClass: "bg-column-review" },
+    { id: "Done", title: "Done", colorClass: "bg-column-done" },
+  ];
+
+  const filteredIssues = issues.filter((issue) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      issue.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      issue.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      issue.office.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  const getIssuesByStatus = (status: Status) => {
+    return filteredIssues.filter((issue) => issue.status === status);
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const activeIssue = issues.find((issue) => issue.id === active.id);
+    const overColumn = columns.find((col) => col.id === over.id);
+
+    if (activeIssue && overColumn && activeIssue.status !== overColumn.id) {
+      setIssues((prevIssues) =>
+        prevIssues.map((issue) =>
+          issue.id === activeIssue.id ? { ...issue, status: overColumn.id } : issue
+        )
+      );
+    }
+  };
+
+  const handleIssueClick = (issue: Issue) => {
+    setSelectedIssue(issue);
+    setDrawerOpen(true);
+  };
+
+  const activeIssue = activeId ? issues.find((issue) => issue.id === activeId) : null;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h1 className="text-2xl font-bold text-foreground">Issue Manager</h1>
+            <div className="flex items-center gap-3 flex-1 max-w-3xl">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search issues..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Select>
+                <SelectTrigger className="w-[140px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Issue
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Kanban Board */}
+      <main className="container mx-auto px-6 py-8">
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {columns.map((column) => (
+              <KanbanColumn
+                key={column.id}
+                id={column.id}
+                title={column.title}
+                issues={getIssuesByStatus(column.id)}
+                onIssueClick={handleIssueClick}
+                colorClass={column.colorClass}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {activeIssue ? (
+              <IssueCard issue={activeIssue} onClick={() => {}} />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </main>
+
+      {/* Issue Detail Drawer */}
+      <IssueDetailDrawer
+        issue={selectedIssue}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
     </div>
   );
 };
