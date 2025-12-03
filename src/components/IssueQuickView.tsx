@@ -4,9 +4,20 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Calendar,
   User,
@@ -14,7 +25,10 @@ import {
   Tag,
   Clock,
   FileText,
+  Edit,
+  RefreshCw,
 } from "lucide-react";
+import { useState } from "react";
 
 interface IssueQuickViewProps {
   issue: Issue | null;
@@ -35,8 +49,72 @@ const statusColors = {
   Done: "bg-green-600",
 };
 
+// Staff members by department
+const departmentStaff: Record<string, string[]> = {
+  Carpentry: ["Mukesh", "Suresh", "Ramesh", "Kamlesh"],
+  Plumber: ["Thakur Balaji Singh", "Rakesh Kumar", "Vijay Singh"],
+  Electrical: ["Bhaskar Prasad M", "Anil Kumar", "Santosh"],
+  "Telephone/Intercom": ["Bhaskar Prasad M", "Mohan Lal"],
+};
+
+// All departments for reassignment
+const departments = [
+  "Carpentry",
+  "Plumber", 
+  "Electrical",
+  "Telephone/Intercom",
+  "Quarters Related",
+  "Kadamba Hostel - Carpentry",
+  "Transport",
+  "Civil",
+  "Horticulture",
+];
+
 export const IssueQuickView = ({ issue, open, onClose }: IssueQuickViewProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [assignedStaff, setAssignedStaff] = useState("");
+  const [showReassignDialog, setShowReassignDialog] = useState(false);
+  const [reassignDepartment, setReassignDepartment] = useState("");
+  const [reassignReason, setReassignReason] = useState("");
+
   if (!issue) return null;
+
+  // Extract department from office field
+  const getDepartment = (office: string) => {
+    // Handle cases like "Kadamba Hostel - Carpentry"
+    if (office.includes(" - ")) {
+      return office.split(" - ")[1];
+    }
+    return office;
+  };
+
+  const currentDepartment = getDepartment(issue.office);
+  const availableStaff = departmentStaff[currentDepartment] || [];
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setAssignedStaff(issue.assignee);
+  };
+
+  const handleSaveEdit = () => {
+    // Here you would typically update the issue with the new assigned staff
+    console.log("Updated assigned staff:", assignedStaff);
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setAssignedStaff(issue.assignee);
+  };
+
+  const handleReassignConfirm = () => {
+    // Here you would typically update the issue with the new department
+    console.log("Reassigning to department:", reassignDepartment);
+    console.log("Reason:", reassignReason);
+    setShowReassignDialog(false);
+    setReassignDepartment("");
+    setReassignReason("");
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -79,7 +157,23 @@ export const IssueQuickView = ({ issue, open, onClose }: IssueQuickViewProps) =>
                 <Building2 className="h-3 w-3 text-muted-foreground" />
                 <span className="text-muted-foreground font-medium">Office</span>
               </div>
-              <div className="pl-5 text-foreground">{issue.office}</div>
+              <div className="pl-5 flex items-center gap-3">
+                <div className="text-foreground">{issue.office}</div>
+                {isEditing && availableStaff.length > 0 && (
+                  <Select value={assignedStaff} onValueChange={setAssignedStaff}>
+                    <SelectTrigger className="w-[180px] h-8">
+                      <SelectValue placeholder="Assigned Staff" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStaff.map((staff) => (
+                        <SelectItem key={staff} value={staff}>
+                          {staff}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -95,7 +189,20 @@ export const IssueQuickView = ({ issue, open, onClose }: IssueQuickViewProps) =>
                 <Clock className="h-3 w-3 text-muted-foreground" />
                 <span className="text-muted-foreground font-medium">Updated</span>
               </div>
-              <div className="pl-5 text-foreground">{issue.updated}</div>
+              <div className="pl-5 flex items-center justify-between gap-2">
+                <div className="text-foreground">{issue.updated}</div>
+                {isEditing && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowReassignDialog(true)}
+                    className="flex items-center gap-2 h-8"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Reassign Ticket
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -125,9 +232,75 @@ export const IssueQuickView = ({ issue, open, onClose }: IssueQuickViewProps) =>
             <div className="text-xs text-muted-foreground">
               Created by <span className="font-medium text-foreground">{issue.author}</span> • {issue.created}
             </div>
+            {!isEditing ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleEdit}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleSaveEdit}>
+                  Save Changes
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
+
+      {/* Reassignment Dialog */}
+      <Dialog open={showReassignDialog} onOpenChange={setShowReassignDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reassign Ticket</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Select value={reassignDepartment} onValueChange={setReassignDepartment}>
+                <SelectTrigger id="department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for Reassignment</Label>
+              <Input
+                id="reason"
+                placeholder="e.g., Incorrectly assigned to plumber instead of electrician"
+                value={reassignReason}
+                onChange={(e) => setReassignReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReassignDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleReassignConfirm}
+              disabled={!reassignDepartment || !reassignReason}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
