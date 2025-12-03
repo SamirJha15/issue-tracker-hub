@@ -105,6 +105,19 @@ const Index = () => {
     );
   };
 
+  const handleIssueUpdate = (issueId: string, updates: Partial<Issue>) => {
+    console.log('Issue update:', issueId, updates);
+    setIssues((prevIssues) =>
+      prevIssues.map((issue) =>
+        issue.id === issueId ? { ...issue, ...updates } : issue
+      )
+    );
+    // Update selected issue to reflect changes
+    if (selectedIssue && selectedIssue.id === issueId) {
+      setSelectedIssue({ ...selectedIssue, ...updates });
+    }
+  };
+
   const activeIssue = activeId ? issues.find((issue) => issue.id === activeId) : null;
 
   return (
@@ -176,6 +189,7 @@ const Index = () => {
         issue={selectedIssue}
         open={quickViewOpen}
         onClose={() => setQuickViewOpen(false)}
+        onUpdate={handleIssueUpdate}
       />
     </div>
   );

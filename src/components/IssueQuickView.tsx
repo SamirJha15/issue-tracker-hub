@@ -28,12 +28,13 @@ import {
   Edit,
   RefreshCw,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface IssueQuickViewProps {
   issue: Issue | null;
   open: boolean;
   onClose: () => void;
+  onUpdate?: (issueId: string, updates: Partial<Issue>) => void;
 }
 
 const priorityColors = {
@@ -70,12 +71,32 @@ const departments = [
   "Horticulture",
 ];
 
-export const IssueQuickView = ({ issue, open, onClose }: IssueQuickViewProps) => {
+export const IssueQuickView = ({ issue, open, onClose, onUpdate }: IssueQuickViewProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [assignedStaff, setAssignedStaff] = useState("");
   const [showReassignDialog, setShowReassignDialog] = useState(false);
   const [reassignDepartment, setReassignDepartment] = useState("");
   const [reassignReason, setReassignReason] = useState("");
+  
+  // Local state for displaying updated values
+  const [currentAssignee, setCurrentAssignee] = useState("");
+  const [currentOffice, setCurrentOffice] = useState("");
+
+  // Sync state when issue changes or dialog opens
+  useEffect(() => {
+    if (issue) {
+      setCurrentAssignee(issue.assignee);
+      setCurrentOffice(issue.office);
+    }
+    // Reset edit mode when dialog closes or issue changes
+    if (!open) {
+      setIsEditing(false);
+      setAssignedStaff("");
+      setShowReassignDialog(false);
+      setReassignDepartment("");
+      setReassignReason("");
+    }
+  }, [issue?.id, open]); // Reset when issue changes or dialog opens
 
   if (!issue) return null;
 
@@ -88,32 +109,47 @@ export const IssueQuickView = ({ issue, open, onClose }: IssueQuickViewProps) =>
     return office;
   };
 
-  const currentDepartment = getDepartment(issue.office);
+  const currentDepartment = getDepartment(currentOffice);
   const availableStaff = departmentStaff[currentDepartment] || [];
 
   const handleEdit = () => {
     setIsEditing(true);
-    setAssignedStaff(issue.assignee);
+    setAssignedStaff(currentAssignee);
   };
 
   const handleSaveEdit = () => {
-    // Here you would typically update the issue with the new assigned staff
+    // Update the assignee with the selected staff
+    setCurrentAssignee(assignedStaff);
     console.log("Updated assigned staff:", assignedStaff);
+    
+    // Persist the change to parent component
+    if (onUpdate && issue) {
+      onUpdate(issue.id, { assignee: assignedStaff });
+    }
+    
     setIsEditing(false);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setAssignedStaff(issue.assignee);
+    setAssignedStaff(currentAssignee);
   };
 
   const handleReassignConfirm = () => {
-    // Here you would typically update the issue with the new department
+    // Update the office/department
+    setCurrentOffice(reassignDepartment);
     console.log("Reassigning to department:", reassignDepartment);
     console.log("Reason:", reassignReason);
+    
+    // Persist the change to parent component
+    if (onUpdate && issue) {
+      onUpdate(issue.id, { office: reassignDepartment });
+    }
+    
     setShowReassignDialog(false);
     setReassignDepartment("");
     setReassignReason("");
+    setIsEditing(false);
   };
 
   return (
@@ -158,7 +194,7 @@ export const IssueQuickView = ({ issue, open, onClose }: IssueQuickViewProps) =>
                 <span className="text-muted-foreground font-medium">Office</span>
               </div>
               <div className="pl-5 flex items-center gap-3">
-                <div className="text-foreground">{issue.office}</div>
+                <div className="text-foreground">{currentOffice}</div>
                 {isEditing && availableStaff.length > 0 && (
                   <Select value={assignedStaff} onValueChange={setAssignedStaff}>
                     <SelectTrigger className="w-[180px] h-8">
@@ -181,7 +217,7 @@ export const IssueQuickView = ({ issue, open, onClose }: IssueQuickViewProps) =>
                 <User className="h-3 w-3 text-muted-foreground" />
                 <span className="text-muted-foreground font-medium">Assignee</span>
               </div>
-              <div className="pl-5 text-foreground">{issue.assignee}</div>
+              <div className="pl-5 text-foreground">{currentAssignee}</div>
             </div>
 
             <div className="space-y-2">
