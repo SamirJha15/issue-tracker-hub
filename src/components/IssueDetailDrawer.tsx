@@ -15,7 +15,6 @@ import {
   FileText,
   AlertCircle,
   Tag,
-  Edit,
   Clock,
 } from "lucide-react";
 
@@ -144,16 +143,6 @@ export const IssueDetailDrawer = ({ issue, open, onClose }: IssueDetailDrawerPro
             <div className="pl-6 text-sm text-muted-foreground">
               No recent activity
             </div>
-          </div>
-
-          <Separator />
-
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button variant="default" className="flex-1">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Issue
-            </Button>
           </div>
         </div>
       </SheetContent>

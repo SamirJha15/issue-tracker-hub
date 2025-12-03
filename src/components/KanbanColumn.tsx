@@ -1,6 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Issue } from "@/types/issue";
+import { Issue, Status } from "@/types/issue";
 import { SortableIssueCard } from "./SortableIssueCard";
 
 interface KanbanColumnProps {
@@ -8,6 +8,7 @@ interface KanbanColumnProps {
   title: string;
   issues: Issue[];
   onIssueClick: (issue: Issue) => void;
+  onStatusChange?: (issueId: string, newStatus: Status) => void;
   colorClass: string;
 }
 
@@ -16,6 +17,7 @@ export const KanbanColumn = ({
   title,
   issues,
   onIssueClick,
+  onStatusChange,
   colorClass,
 }: KanbanColumnProps) => {
   const { setNodeRef } = useDroppable({ id });
@@ -39,7 +41,12 @@ export const KanbanColumn = ({
       >
         <SortableContext items={issues.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           {issues.map((issue) => (
-            <SortableIssueCard key={issue.id} issue={issue} onIssueClick={onIssueClick} />
+            <SortableIssueCard 
+              key={issue.id} 
+              issue={issue} 
+              onIssueClick={onIssueClick}
+              onStatusChange={onStatusChange}
+            />
           ))}
         </SortableContext>
       </div>

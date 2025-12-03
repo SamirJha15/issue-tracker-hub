@@ -4,7 +4,7 @@ import { Issue, Status } from "@/types/issue";
 import { mockIssues } from "@/data/mockIssues";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { IssueCard } from "@/components/IssueCard";
-import { IssueDetailDrawer } from "@/components/IssueDetailDrawer";
+import { IssueQuickView } from "@/components/IssueQuickView";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,7 @@ import { Search, User } from "lucide-react";
 const Index = () => {
   const [issues, setIssues] = useState<Issue[]>(mockIssues);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
@@ -91,8 +91,18 @@ const Index = () => {
   };
 
   const handleIssueClick = (issue: Issue) => {
+    console.log('Issue clicked:', issue.id);
     setSelectedIssue(issue);
-    setDrawerOpen(true);
+    setQuickViewOpen(true);
+  };
+
+  const handleStatusChange = (issueId: string, newStatus: Status) => {
+    console.log('Status change:', issueId, 'to', newStatus);
+    setIssues((prevIssues) =>
+      prevIssues.map((issue) =>
+        issue.id === issueId ? { ...issue, status: newStatus } : issue
+      )
+    );
   };
 
   const activeIssue = activeId ? issues.find((issue) => issue.id === activeId) : null;
@@ -147,6 +157,7 @@ const Index = () => {
                   title={column.title}
                   issues={getIssuesByStatus(column.id)}
                   onIssueClick={handleIssueClick}
+                  onStatusChange={handleStatusChange}
                   colorClass={column.colorClass}
                 />
               </div>
@@ -160,11 +171,11 @@ const Index = () => {
         </DndContext>
       </main>
 
-      {/* Issue Detail Drawer */}
-      <IssueDetailDrawer
+      {/* Issue Quick View Popup */}
+      <IssueQuickView
         issue={selectedIssue}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        open={quickViewOpen}
+        onClose={() => setQuickViewOpen(false)}
       />
     </div>
   );
